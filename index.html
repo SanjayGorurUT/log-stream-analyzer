@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Log Stream</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #logs { margin-top: 20px; max-width: 600px; margin: auto; text-align: left; }
+        .log { padding: 5px; margin: 5px 0; border-bottom: 1px solid #ddd; }
+        .INFO { color: blue; }
+        .WARN { color: orange; }
+        .ERROR { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Log Stream Analyzer</h1>
+    <button onclick="filterLogs('ALL')">All</button>
+    <button onclick="filterLogs('INFO')">Info</button>
+    <button onclick="filterLogs('WARN')">Warning</button>
+    <button onclick="filterLogs('ERROR')">Error</button>
+    <div id="logs"></div>
+
+    <script>
+        const ws = new WebSocket("ws://localhost:5001");
+        const logsContainer = document.getElementById("logs");
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            if (data.type === "INIT" || data.type === "UPDATE") {
+                logsContainer.innerHTML = data.logs.map(log => 
+                    `<div class="log ${log.level}">[${log.level}] ${log.timestamp} - ${log.message}</div>`
+                ).join("");
+            }
+
+            if (data.type === "NEW_LOG") {
+                const newLog = document.createElement("div");
+                newLog.className = `log ${data.log.level}`;
+                newLog.innerHTML = `[${data.log.level}] ${data.log.timestamp} - ${data.log.message}`;
+                logsContainer.prepend(newLog);
+            }
+        };
+
+        function filterLogs(level) {
+            ws.send(JSON.stringify({ type: "FILTER", level }));
+        }
+    </script>
+</body>
+</html>
