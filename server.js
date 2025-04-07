@@ -9,6 +9,25 @@ const wss = new WebSocket.Server({ port: process.env.WSPORT || 8083 });
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (req, res) => {
+    res.send({ message: "WebSocket server is running", port: PORT, status: 200 });
+});
+
+app.get("/logs", (req, res) => {
+    if(allLogs.length == 0) {
+        res.status(404).send({ message: "No logs found", status: 404 });
+    }
+    res.status(200).send(allLogs);
+}); 
+
+app.post("/log", (req, res) => {
+    const logRecord = req.body.json();
+    if(!logRecord.timestamp) {
+        res.status(400).send({ message: "Log record must include timestamp", status: 400 });
+    }
+    res.status(204).send({ message: "Log record created", status: 204 });
+});
+
 // Simulated log levels
 const levels = ["INFO", "WARN", "ERROR"];
 const logs = [];
@@ -29,6 +48,7 @@ wss.on("connection", (ws) => {
 });
 
 // Generate logs every 2 seconds
+// This should call server API to update logs
 setInterval(() => {
     const newLog = {
         timestamp: new Date().toISOString(),
